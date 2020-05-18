@@ -3,12 +3,13 @@ package dbconnector
 import (
 	"database/sql"
 	"encoding/json"
-
-	_ "github.com/mattn/go-sqlite3"
+	"os"
+	//_ "github.com/mattn/go-sqlite3"
 )
 
 func dbConn() (db *sql.DB) {
-	db, err := sql.Open("sqlite3", "database.db")
+	dbURL := os.Getenv("DATABASE_URL")
+	db, err := sql.Open("postgres", dbURL)
 
 	if err != nil {
 		panic(err.Error())
