@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	//_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func dbConn() (db *sql.DB) {

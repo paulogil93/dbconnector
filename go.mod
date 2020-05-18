@@ -1,4 +1,4 @@
-module github.com/paulogil93/dbconnector
+module dbconnector
 
 go 1.14
 
