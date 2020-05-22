@@ -4,8 +4,18 @@ import (
 	"database/sql"
 	"encoding/json"
 	"os"
-	//_ "github.com/mattn/go-sqlite3"
 )
+
+// User struct to handle teachers data
+type User struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Initials string `json:"initials"`
+	Category string `json:"category"`
+	NMec     int    `json:"nmec"`
+	Email    string `json:"email"`
+	Area     string `json:"area"`
+}
 
 func dbConn() (db *sql.DB) {
 	dbURL := os.Getenv("DATABASE_URL")
@@ -18,20 +28,18 @@ func dbConn() (db *sql.DB) {
 	return db
 }
 
-// User struct to handle teachers data
-type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Initials string `json:"initials"`
-	Category string `json:"category"`
-}
+// // AddUser bla bla
+// func AddUser(id int, name string, initials string, category string) {
+// 	statement, _ := dbConn().Prepare("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, initials TEXT, category TEXT)")
+// 	statement.Exec()
+// 	statement, _ = dbConn().Prepare("INSERT INTO users(id, name, initials, category) VALUES (?, ?, ?, ?)")
+// 	statement.Exec(id, name, initials, category)
+// }
 
-// AddUser bla bla
-func AddUser(id int, name string, initials string, category string) {
-	statement, _ := dbConn().Prepare("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, initials TEXT, category TEXT)")
-	statement.Exec()
-	statement, _ = dbConn().Prepare("INSERT INTO users(id, name, initials, category) VALUES (?, ?, ?, ?)")
-	statement.Exec(id, name, initials, category)
+//AddUser function
+func AddUser(id int, email string, name string, initials string, category int, nmec int, area int) {
+	stmt, _ := dbConn().Prepare("CALL pei.addUser(?, ?, ?, ?, ?, ?, ?)")
+	stmt.Exec(id, email, name, initials, category, nmec, area)
 }
 
 // ShowUsers bla bla
