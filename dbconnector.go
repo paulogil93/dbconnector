@@ -1,4 +1,4 @@
-package dbconnector
+package github.com/paulogil93/dbconnector
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	//Import to help with postgres driver
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 )
 
 func dbConn() (db *pgx.Conn) {
