@@ -1,25 +1,19 @@
 package dbconnector
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strconv"
+
+	//Import to help with postgres driver
+	"github.com/jackc/pgx"
 )
 
-// User struct to handle teachers data
-type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Initials string `json:"initials"`
-	Category string `json:"category"`
-	NMec     int    `json:"nmec"`
-	Email    string `json:"email"`
-	Area     string `json:"area"`
-}
-
-func dbConn() (db *sql.DB) {
+func dbConn() (db *pgx.Conn) {
 	dbURL := os.Getenv("DATABASE_URL")
-	db, err := sql.Open("postgres", dbURL)
+	db, err := pgx.Connect(context.Background(), dbURL)
 
 	if err != nil {
 		panic(err.Error())
@@ -28,18 +22,25 @@ func dbConn() (db *sql.DB) {
 	return db
 }
 
-// // AddUser bla bla
-// func AddUser(id int, name string, initials string, category string) {
-// 	statement, _ := dbConn().Prepare("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, initials TEXT, category TEXT)")
-// 	statement.Exec()
-// 	statement, _ = dbConn().Prepare("INSERT INTO users(id, name, initials, category) VALUES (?, ?, ?, ?)")
-// 	statement.Exec(id, name, initials, category)
-// }
+// User struct to handle teachers data
+type User struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Initials string `json:"initials"`
+	Category int    `json:"category"`
+	NMec     int    `json:"nmec"`
+	Email    string `json:"email"`
+	Area     int    `json:"area"`
+}
 
-//AddUser function
-func AddUser(id int, email string, name string, initials string, category int, nmec int, area int) {
-	stmt, _ := dbConn().Prepare("CALL pei.addUser(?, ?, ?, ?, ?, ?, ?)")
-	stmt.Exec(id, email, name, initials, category, nmec, area)
+// AddUser function: returns true if POST succeded, else false
+func AddUser(id int, email string, name string, initials string, category int, nmec int, area int) bool {
+	_, err := dbConn().Query(context.Background(), GetAddUserSQLCmd(id, email, name, initials, category, nmec, area))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Can't connect to database: %v\n", err)
+		return false
+	}
+	return true
 }
 
 // ShowUsers bla bla
@@ -47,14 +48,54 @@ func ShowUsers() []byte {
 	var user User
 	var arr []User
 
-	rows, _ := dbConn().Query("SELECT * FROM users;")
+	rows, _ := dbConn().Query(context.Background(), "SELECT * FROM pei.showUsers();")
 
 	for rows.Next() {
-		rows.Scan(&user.ID, &user.Name, &user.Initials, &user.Category)
+		rows.Scan(&user.ID, &user.Email, &user.Name, &user.Initials, &user.Category, &user.NMec, &user.Area)
 		arr = append(arr, user)
 	}
 
 	j, _ := json.Marshal(arr)
 	return j
+}
 
+// ShowUserByID function
+func ShowUserByID(id int) User {
+	var user User
+
+	row := dbConn().QueryRow(context.Background(), "SELECT * FROM pei.showUserByID("+strconv.Itoa(id)+");")
+	row.Scan(&user.ID, &user.Email, &user.Name, &user.Initials, &user.Category, &user.NMec, &user.Area)
+
+	return user
+}
+
+// CreateCategory function
+func CreateCategory(name string) bool {
+	_, err := dbConn().Query(context.Background(), "CALL pei.AddCategory("+name+");")
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// AddNotification function
+func AddNotification(sender int, receiver int, title string, body string) bool {
+	fmt.Println(GetAddNotificationSQLCmd(sender, receiver, title, body))
+	_, err := dbConn().Query(context.Background(), GetAddNotificationSQLCmd(sender, receiver, title, body))
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// GetAddUserSQLCmd returns the correct SQL command for the AddUSer Stored Procedure
+func GetAddUserSQLCmd(id int, email string, name string, initials string, category int, nmec int, area int) string {
+	return "CALL pei.addUser(" + strconv.Itoa(id) + "," + "'" + email + "'" + "," + "'" + name + "'" +
+		"," + "'" + initials + "'" + "," + strconv.Itoa(category) + "," + strconv.Itoa(nmec) + "," + strconv.Itoa(area) + ")"
+}
+
+// GetAddNotificationSQLCmd returns the correct SQL command for the AddNotification Stored Procedure
+func GetAddNotificationSQLCmd(sender int, receiver int, title string, body string) string {
+	return "CALL pei.addNotification(" + strconv.Itoa(sender) + "," + strconv.Itoa(receiver) + "," + "'" + title + "'" +
+		"," + "'" + body + "'" + ")"
 }
